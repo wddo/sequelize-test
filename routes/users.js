@@ -13,15 +13,17 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/sign_up', function(req, res, next) {
-  const salt = Math.round((new Date().valueOf() * Math.random())) + ''
-  const hashPw = crypto.createHash('sha512').update(req.body.pw + salt).digest('hex')
-
-  db.User.create({
-    ...req.body,
-    password: hashPw,
-    salt,
-  }).then(results => {
-    res.json(results)
+  crypto.randomBytes(64, (err, buf) => {
+    const salt = buf.toString('base64')
+    crypto.pbkdf2(req.body.password, salt, 108402, 64, 'sha512', (err, key) => {
+      db.User.create({
+        ...req.body,
+        password: key.toString('base64'),
+        salt,
+      }).then(results => {
+        res.json(results)
+      })
+    })
   })
 });
 
@@ -31,15 +33,18 @@ router.post('/sign_in', function(req, res, next) {
       email: req.body.email
     }
   }).then(results => {
-    const salt = results.dataValues.slat
-    const hashPw = crypto.createHash('sha512').update(req.body.pw + salt).digest('hex')
-    debug(hashPw)
-    debug(results.dataValues.password)
-    if (hashPw === results.dataValues.password) {
-      res.send(req.body.email)
-    } else {
-      throw 'error password'
-    }
+    const salt = results.dataValues.salt
+
+    crypto.pbkdf2(req.body.password, salt, 108402, 64, 'sha512', (err, key) => {
+      if (key.toString('base64') === results.password) {
+        res.cookie('user', results.dataValues.email, {
+          expires: new Date(Date.now() + 900000), 
+          httpOnly: true
+        }).end()
+      } else {
+        throw 'error password'
+      }
+    })
   })
 });
 
