@@ -4,15 +4,16 @@ var db = require('../src/db/models')
 var debug = require('debug')('sequelize-test:log')
 
 const crypto = require('crypto');
+const { BadGateway } = require('http-errors');
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res) {
   db.User.findAll().then((results) => {
     res.json(results);
   })
 });
 
-router.post('/sign_up', function(req, res, next) {
+router.post('/sign_up', function(req, res) {
   crypto.randomBytes(64, (err, buf) => {
     const salt = buf.toString('base64')
     crypto.pbkdf2(req.body.password, salt, 108402, 64, 'sha512', (err, key) => {
@@ -27,7 +28,7 @@ router.post('/sign_up', function(req, res, next) {
   })
 });
 
-router.post('/sign_in', function(req, res, next) {
+router.post('/sign_in', function(req, res) {
   db.User.findOne({
     where: {
       email: req.body.email
@@ -38,9 +39,10 @@ router.post('/sign_in', function(req, res, next) {
     crypto.pbkdf2(req.body.password, salt, 108402, 64, 'sha512', (err, key) => {
       if (key.toString('base64') === results.password) {
         res.cookie('user', results.dataValues.email, {
-          expires: new Date(Date.now() + 900000), 
+          expires: new Date(2020, 11, 1),
           httpOnly: true
-        }).end()
+        })
+        res.send({user: req.cookies.users})
       } else {
         throw 'error password'
       }
@@ -48,7 +50,7 @@ router.post('/sign_in', function(req, res, next) {
   })
 });
 
-router.delete('/', function(req, res, next) {
+router.delete('/', function(req, res) {
   db.User.destroy({where: {email: req.body.email}}).then(results => {
     res.json(results)
   })

@@ -10,7 +10,10 @@ var cors = require('cors');
 var app = express();
 
 // CORS 설정
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
