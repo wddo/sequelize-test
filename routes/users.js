@@ -4,7 +4,6 @@ var db = require('../src/db/models')
 var debug = require('debug')('sequelize-test:log')
 
 const crypto = require('crypto');
-const { BadGateway } = require('http-errors');
 
 /* GET users listing. */
 router.get('/', function(req, res) {
